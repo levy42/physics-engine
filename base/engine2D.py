@@ -35,6 +35,7 @@ class Vector2D(object):
         return math.sqrt((self.x - other.x) * (self.x - other.x)
                          + (self.y - other.y) * (self.y - other.y))
 
+
 class Point2D(object):
     """
     mass - mass of point
@@ -42,6 +43,7 @@ class Point2D(object):
     ppos :Vector2D(x,y) - previous position
     Represent a simple point with position and mass
     """
+
     def __init__(self, x, y, mass):
         """
         (float x, float y, float mass)
@@ -50,10 +52,12 @@ class Point2D(object):
         self.p_pos = Vector2D(x, y)
         self.mass = float(mass)
 
+
 class Joint(object):
     """
     Represent a simple joint of 2 points that restrict distance between them
     """
+
     def __init__(self, p1, p2, k, length=None):
         self.p1 = p1
         self.p2 = p2
@@ -74,7 +78,7 @@ class World(object):
     """
     _points = []
     _joints = []
-    G = Vector2D(0, 0)
+    G = Vector2D(0, -9.8)
 
     def __init__(self, n_pos, ground=True):
         self.n_pos = n_pos
@@ -90,13 +94,21 @@ class World(object):
                 l = Vector2D.distance_to(j.p1.pos, j.p2.pos)
                 dl = j.length - l
                 r = (j.p1.pos - j.p2.pos) / l * dl
-                j.p1.pos -= r * j._dm2 / self.n_pos
-                j.p2.pos += r * j._dm1 / self.n_pos
+                j.p1.pos += r * j._dm2 / self.n_pos
+                j.p2.pos -= r * j._dm1 / self.n_pos
 
         for p in self._points:
             tmp = p.pos
             p.pos += p.pos - p.p_pos
             p.p_pos = tmp
+
+        if self._ground:
+            self.ground()
+
+    def ground(self, y=0):
+        for p in self._points:
+            if p.pos.y < y:
+                p.pos.y = y
 
     def add_point(self, point):
         self._points.append(point)
@@ -106,17 +118,3 @@ class World(object):
 
     def add_joint(self, p1, p2, k, length=None):
         self._joints.append(Joint(p1, p2, k, length=length))
-
-
-world = World(2)
-points = [Point2D(0,0,1),Point2D(0,10,1)]
-world.add_points(points)
-world.add_joint(points[0], points[1],0.1, length=20)
-for i in range(0, 100):
-    world.step(1.0 / 60)
-    print('==========')
-    for p in points:
-        print(p.pos)
-
-
-
