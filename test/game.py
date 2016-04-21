@@ -1,5 +1,6 @@
 import math
 import pygame
+import random
 
 import base.engine2D as engine
 
@@ -7,30 +8,48 @@ GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GRAY = (60, 60, 60)
+RED = (255, 0, 0)
 
-SIZE = (600, 600)
+SIZE = (700, 700)
 ZOOM = 20
-D = 20
-B_D = 20
-X = 300
-Y = 300
+MAX_ZOOM = 100
+X = 350
+Y = 350
+
+
+# utils
+# ==============================================================================
+def trans(x, y):
+    return [int(x * ZOOM) + X, SIZE[1] - (int(y * ZOOM) + Y)]
+
+
+def trans_out(x, y):
+    return [float(x - X) / ZOOM, float(SIZE[1] - (y + Y)) / ZOOM]
+
+
+def catch_point(x, y, world):
+    for p in world._points:
+        if engine.Vector2D.distance_to(p.pos,
+                                       engine.Vector2D(x, y)) < 10.0 / ZOOM:
+            return p
+    return None
+
+
+def draw_selected_point(p, screen):
+    pygame.draw.circle(screen, RED, trans(p.pos.x, p.pos.y), 4)
 
 
 def draw_world(world, screen):
-    def trans(x, y):
-        return [int(x * ZOOM) + X, SIZE[1] - (int(y * ZOOM) + Y)]
-
     def draw_layout():
         pygame.draw.line(screen, WHITE, [0, SIZE[0] - Y],
                          [SIZE[0], SIZE[0] - Y], 2)
         pygame.draw.line(screen, WHITE, [X, 0], [X, SIZE[1]], 2)
-        d = D
-        n = SIZE[0] / d
-        for i in range(0, n / 2):
-            pygame.draw.line(screen, GRAY, [0, SIZE[0] - Y + i * d],
-                             [SIZE[0], SIZE[0] - Y + i * d], 1)
-            pygame.draw.line(screen, GRAY, [X + i * d, 0],
-                             [X + i * d, SIZE[1]], 1)
+        n = SIZE[0] / ZOOM
+        for i in range(0, n):
+            pygame.draw.line(screen, GRAY, [0, (SIZE[1] - Y) % ZOOM + i * ZOOM],
+                             [SIZE[0], (SIZE[1] - Y) % ZOOM + i * ZOOM], 1)
+            pygame.draw.line(screen, GRAY, [X % ZOOM + i * ZOOM, 0],
+                             [X % ZOOM + i * ZOOM, SIZE[1]], 1)
 
     screen.fill(BLACK)
     draw_layout()
@@ -41,6 +60,8 @@ def draw_world(world, screen):
                          trans(j.p2.pos.x, j.p2.pos.y), 1)
 
 
+# =============================================================================
+# run
 pygame.init()
 gameDisplay = pygame.display.set_mode(SIZE)
 pygame.display.set_caption('A bit Racey')
@@ -51,16 +72,46 @@ crashed = False
 # ini section
 # =============================================================================
 world = engine.World(2)
-for i in range(0, 100, 10):
+for i in range(0, 1, 10):
     points = [engine.Point2D(0, 10 + i, 1), engine.Point2D(1, 20 + i, 1),
               engine.Point2D(10, 10 + i, 1)]
     world.add_points(points)
     world.add_joint(points[0], points[1], 1)
     world.add_joint(points[0], points[2], 1)
     world.add_joint(points[1], points[2], 1)
+
+
 # =============================================================================
+# contollers
+# =============================
+
+
+def zoom_in():
+    global ZOOM, X, Y
+    if ZOOM < MAX_ZOOM:
+        diff = ZOOM / 10 + 1
+        ZOOM += diff
+        X = int(X + (X - SIZE[0]/2) * (float(ZOOM + diff) / ZOOM))
+        Y = int(Y + (Y - SIZE[1]/2) * (float(ZOOM + diff) / ZOOM))
+
+
+def zoom_out():
+    global ZOOM, X, Y
+    if ZOOM > 4:
+        diff = ZOOM / 10 + 1
+        ZOOM -= diff
+        X = int(X - (X - SIZE[0]/2) * (float(ZOOM - diff) / ZOOM))
+        Y = int(Y - (Y - SIZE[1]/2) * (float(ZOOM - diff) / ZOOM))
+
+
+pressed = None  # None, 'point', 'field', 'joint'
+selected_point = None  # clicked point
+selected_joint = None  # clicked joint
+move = None
+x, y = 0, 0  # coordinates of field touch
 
 while not crashed:
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             crashed = True
@@ -74,23 +125,47 @@ while not crashed:
             if event.key == pygame.K_DOWN:
                 Y += 10
             if event.key == pygame.K_KP_PLUS:
-                if ZOOM > B_D:
-                    ZOOM += ZOOM / B_D
-                else:
-                    ZOOM += 1
-                D += 1
-                if D == 40:
-                    D = 20
+                zoom_in()
             if event.key == pygame.K_KP_MINUS:
-                if ZOOM > B_D:
-                    ZOOM -= ZOOM / B_D
+                zoom_out()
+        if event.type == pygame.MOUSEMOTION:
+            if pressed:
+                if move:
+                    move = pygame.mouse.get_rel()
+                    if pressed == 'field':
+                        X += move[0]
+                        Y -= move[1]
                 else:
-                    ZOOM -= 1
-                D -= 1
-                if D == 19:
-                    D = 40
+                    move = pygame.mouse.get_rel()
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 4:
+                zoom_in()
+            if event.button == 5:
+                zoom_out()
+            if event.button == 1:
+                pos = pygame.mouse.get_pos()
+                pressed = 'field'
+                x, y = trans_out(pos[0], pos[1])
+                selected_point = catch_point(x, y, world)
+                if selected_point:
+                    pressed = 'point'
+
+        if event.type == pygame.MOUSEBUTTONUP:
+            move = None
+            pressed = None
+            selected_point = None
+
+    if selected_point:
+        pos = pygame.mouse.get_pos()
+        pos = trans_out(pos[0], pos[1])
+        selected_point.pos.x = pos[0]
+        selected_point.pos.y = pos[1]
+        print random.randint
 
     world.step(1.0 / 60)
     draw_world(world, gameDisplay)
+    if selected_point:
+        draw_selected_point(selected_point, gameDisplay)
     pygame.display.update()
     clock.tick(60)

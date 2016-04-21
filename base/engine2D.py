@@ -52,6 +52,16 @@ class Point2D(object):
         self.p_pos = Vector2D(x, y)
         self.mass = float(mass)
 
+    def set_pos(self, x, y):
+        """
+        use this method when you want to move your point
+        to some position and terminate it`s moving
+        """
+        self.pos.x = x
+        self.p_pos.x = x
+        self.pos.y = y
+        self.p_pos.y = y
+
 
 class Joint(object):
     """
