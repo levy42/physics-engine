@@ -1,5 +1,7 @@
 import math
 
+import restrictions
+
 
 class Vector2D(object):
     def __init__(self, x, y):
@@ -51,6 +53,7 @@ class Point2D(object):
         self.pos = Vector2D(x, y)
         self.p_pos = Vector2D(x, y)
         self.mass = float(mass)
+        self.is_static = False
 
     def set_pos(self, x, y):
         """
@@ -61,6 +64,23 @@ class Point2D(object):
         self.p_pos.x = x
         self.pos.y = y
         self.p_pos.y = y
+
+    def fix(self):
+        """
+        makes point unmovable,
+        gravity and any other interaction would not move it
+        """
+        self._mass = self.mass
+        self.mass = float("inf")
+        self.is_static = True
+
+    def unfix(self):
+        """
+        makes point movable
+        """
+        if self.is_static:
+            self.mass = self._mass
+            self.is_static = False
 
 
 class Joint(object):
@@ -76,6 +96,8 @@ class Joint(object):
         # dm{1,2} uses for joint calculations
         self._dm1 = p1.mass / (p1.mass + p2.mass) * k
         self._dm2 = p2.mass / (p1.mass + p2.mass) * k
+        if math.isnan(self._dm1) : self._dm1 = k
+        if math.isnan(self._dm2) : self._dm2 = k
 
 
 class World(object):
@@ -90,10 +112,9 @@ class World(object):
     _joints = []
     G = Vector2D(0, -9.8)
 
-    def __init__(self, n_pos, ground=True):
+    def __init__(self, n_pos, ground=restrictions.ground()):
         self.n_pos = n_pos
-        if ground:
-            self._ground = True
+        self._ground = ground
 
     def step(self, dt):
         for p in self._points:
@@ -108,17 +129,17 @@ class World(object):
                 j.p2.pos -= r * j._dm1 / self.n_pos
 
         for p in self._points:
-            tmp = p.pos
-            p.pos += p.pos - p.p_pos
-            p.p_pos = tmp
-
-        if self._ground:
-            self.ground()
+            if not p.is_static:
+                tmp = p.pos
+                p.pos += p.pos - p.p_pos
+                p.p_pos = tmp
+            else:
+                p.pos = p.p_pos
+        self.ground()
 
     def ground(self, y=0):
-        for p in self._points:
-            if p.pos.y < y:
-                p.pos.y = y
+        if self._ground:
+            self._ground(self._points)
 
     def add_point(self, point):
         self._points.append(point)
