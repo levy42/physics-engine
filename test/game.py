@@ -1,6 +1,4 @@
-import math
 import pygame
-import random
 
 import base.engine2D as engine
 
@@ -16,6 +14,8 @@ MAX_ZOOM = 100
 X = 350
 Y = 350
 
+def ground(x):
+    return x/3
 
 # utils
 # ==============================================================================
@@ -39,6 +39,16 @@ def mark_point(screen, p, color):
     pygame.draw.circle(screen, color, trans(p.pos.x, p.pos.y), 4)
 
 
+def draw_ground(screen, func):
+    pc = trans_out(0, 0)
+    for i in range(1, 1000):
+        x = float(i - X) / ZOOM
+        p = trans(x, func(x))
+        pygame.draw.line(screen, WHITE, pc, p, 2)
+        pc = p
+
+
+
 def draw_world(world, screen):
     def draw_layout():
         pygame.draw.line(screen, WHITE, [0, SIZE[0] - Y],
@@ -53,6 +63,7 @@ def draw_world(world, screen):
 
     screen.fill(BLACK)
     draw_layout()
+    draw_ground(screen, ground)
     for p in world._points:
         pygame.draw.circle(screen, GREEN, trans(p.pos.x, p.pos.y), 3)
     for j in world._joints:
@@ -74,7 +85,9 @@ joint_k = 0.02
 # ==============================================================================
 # ini section
 # =============================================================================
-world = engine.World(2)
+import base.restrictions as restrct
+
+world = engine.World(2, ground=restrct.function(ground))
 for i in range(0, 1, 10):
     points = [engine.Point2D(0, 10 + i, 1), engine.Point2D(1, 20 + i, 1),
               engine.Point2D(10, 10 + i, 1)]
@@ -95,8 +108,8 @@ def zoom_in():
         tmp_zoom = ZOOM
         diff = ZOOM / 10 + 1
         ZOOM += diff
-        X = SIZE[0] - int((SIZE[0] / 2 - X) * float(ZOOM / tmp_zoom))
-        Y = SIZE[1] - int((SIZE[1] / 2 - Y) * float(ZOOM / tmp_zoom))
+        X = SIZE[0] / 2 - (SIZE[0] / 2 - X) * ZOOM / tmp_zoom
+        Y = SIZE[0] / 2 - (SIZE[1] / 2 - Y) * ZOOM / tmp_zoom
 
 
 def zoom_out():
@@ -105,8 +118,8 @@ def zoom_out():
         tmp_zoom = ZOOM
         diff = ZOOM / 10 + 1
         ZOOM -= diff
-        X = SIZE[0] - int((SIZE[0] / 2 - X) * float(ZOOM / tmp_zoom))
-        Y = SIZE[1] - int((SIZE[1] / 2 - Y) * float(ZOOM / tmp_zoom))
+        X = SIZE[0] / 2 - (SIZE[0] / 2 - X) * ZOOM / tmp_zoom
+        Y = SIZE[0] / 2 - (SIZE[1] / 2 - Y) * ZOOM / tmp_zoom
 
 
 pressed = None  # None, 'point', 'field', 'joint'
@@ -199,7 +212,6 @@ while not crashed:
         if pause:
             selected_point.p_pos.x = pos[0]
             selected_point.p_pos.y = pos[1]
-
 
     if not pause:
         world.step(1.0 / 60)
