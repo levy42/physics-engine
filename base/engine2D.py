@@ -29,8 +29,15 @@ class Vector2D(object):
     def __str__(self):
         return str((self.x, self.y))
 
+    def __len__(self):
+        return math.sqrt(self.x * self.x + self.y * self.y)
+
     def dot_product(self, other):
         return self.x * other.x + self.y * other.y
+
+    def proection(self, other):
+        len = len(other)
+        return self / len
 
     def distance_to(self, other):
         """ uses the Euclidean norm to calculate the distance """
@@ -96,8 +103,8 @@ class Joint(object):
         # dm{1,2} uses for joint calculations
         self._dm1 = p1.mass / (p1.mass + p2.mass) * k
         self._dm2 = p2.mass / (p1.mass + p2.mass) * k
-        if math.isnan(self._dm1) : self._dm1 = k
-        if math.isnan(self._dm2) : self._dm2 = k
+        if math.isnan(self._dm1): self._dm1 = k
+        if math.isnan(self._dm2): self._dm2 = k
 
 
 class World(object):
