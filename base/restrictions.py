@@ -20,8 +20,8 @@ def function(func):
                 k = (l - func(p.pos.x + 0.01)) / 0.01
                 _k = -1 / k
                 p.pos.x += dl * k
-                x_v = p.pos.x - p.p_pos.x
-                p.pos.x -= eng.Vector2D.proection(x_y)
+                x_v = p.pos - p.p_pos
+                p.pos -= eng.Vector2D.proection(x_v, eng.Vector2D(1,_k))
                 p.pos.y = l
 
     return _restriction

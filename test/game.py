@@ -1,4 +1,7 @@
 import pygame
+import math
+import sys
+import time
 
 import base.engine2D as engine
 
@@ -8,14 +11,17 @@ WHITE = (255, 255, 255)
 GRAY = (60, 60, 60)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
+GROUND = (234, 45, 35)
 SIZE = (700, 700)
-ZOOM = 20
-MAX_ZOOM = 100
+ZOOM = 100
+MAX_ZOOM = 500
 X = 350
 Y = 350
 
+
 def ground(x):
-    return x/3
+    return 3 * math.sin(x / 3)
+
 
 # utils
 # ==============================================================================
@@ -44,9 +50,8 @@ def draw_ground(screen, func):
     for i in range(1, 1000):
         x = float(i - X) / ZOOM
         p = trans(x, func(x))
-        pygame.draw.line(screen, WHITE, pc, p, 2)
+        pygame.draw.line(screen, GROUND, pc, p, 2)
         pc = p
-
 
 
 def draw_world(world, screen):
@@ -81,16 +86,16 @@ clock = pygame.time.Clock()
 crashed = False
 # Physic settings
 point_mass = 1
-joint_k = 0.02
+joint_k = 1
 # ==============================================================================
 # ini section
 # =============================================================================
 import base.restrictions as restrct
 
-world = engine.World(2, ground=restrct.function(ground))
+world = engine.World(10, ground=restrct.function(ground))
 for i in range(0, 1, 10):
-    points = [engine.Point2D(0, 10 + i, 1), engine.Point2D(1, 20 + i, 1),
-              engine.Point2D(10, 10 + i, 1)]
+    points = [engine.Point2D(0, 10 + i, 1), engine.Point2D(1, 12 + i, 1),
+              engine.Point2D(2, 10 + i, 1)]
     world.add_points(points)
     world.add_joint(points[0], points[1], 1)
     world.add_joint(points[0], points[2], 1)
@@ -128,6 +133,7 @@ selected_joint = None  # clicked joint
 joint_point = None
 move = None
 pause = False
+last_click = time.time()
 x, y = 0, 0  # coordinates of field touch
 
 while not crashed:
@@ -172,12 +178,21 @@ while not crashed:
             if event.button == 5:
                 zoom_out()
             if event.button == 1:
-                pos = pygame.mouse.get_pos()
-                pressed = 'field'
-                x, y = trans_out(pos[0], pos[1])
-                selected_point = catch_point(x, y, world)
-                if selected_point:
-                    pressed = 'point'
+                current_time = time.time()
+                delay = current_time - last_click
+                last_click = current_time
+                if delay < 0.2:
+                    pos = pygame.mouse.get_pos()
+                    pressed = 'field'
+                    x, y = trans_out(pos[0], pos[1])
+                    world.add_point(engine.Point2D(x, y, point_mass))
+                else:
+                    pos = pygame.mouse.get_pos()
+                    pressed = 'field'
+                    x, y = trans_out(pos[0], pos[1])
+                    selected_point = catch_point(x, y, world)
+                    if selected_point:
+                        pressed = 'point'
             if event.button == 2:
                 pos = pygame.mouse.get_pos()
                 pressed = 'field'

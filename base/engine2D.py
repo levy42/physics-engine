@@ -36,8 +36,8 @@ class Vector2D(object):
         return self.x * other.x + self.y * other.y
 
     def proection(self, other):
-        len = len(other)
-        return self / len
+        l = len(other)
+        return self / l
 
     def distance_to(self, other):
         """ uses the Euclidean norm to calculate the distance """
@@ -126,7 +126,7 @@ class World(object):
     def step(self, dt):
         for p in self._points:
             p.pos += self.G * dt * dt
-
+        self.ground()
         for i in range(0, self.n_pos):
             for j in self._joints:
                 l = Vector2D.distance_to(j.p1.pos, j.p2.pos)
@@ -142,7 +142,6 @@ class World(object):
                 p.p_pos = tmp
             else:
                 p.pos = p.p_pos
-        self.ground()
 
     def ground(self, y=0):
         if self._ground:
