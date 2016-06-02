@@ -126,7 +126,6 @@ class World(object):
     def step(self, dt):
         for p in self._points:
             p.pos += self.G * dt * dt
-        self.ground()
         for i in range(0, self.n_pos):
             for j in self._joints:
                 l = Vector2D.distance_to(j.p1.pos, j.p2.pos)
@@ -135,6 +134,7 @@ class World(object):
                 j.p1.pos += r * j._dm2 / self.n_pos
                 j.p2.pos -= r * j._dm1 / self.n_pos
 
+        self.ground()
         for p in self._points:
             if not p.is_static:
                 tmp = p.pos
