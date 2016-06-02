@@ -42,3 +42,5 @@ def line_intersection(p1, p2, p3, p4):
 #     line_intersection(p1, p2, p3, p4)
 # t2 = time.time()
 # print t2 - t1
+
+#test
